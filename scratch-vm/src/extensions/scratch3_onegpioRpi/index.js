@@ -19,6 +19,8 @@ Arduino Uno, ESP-8666, or Raspberry Pi
  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+/* eslint-disable */
+
 // Boiler plate from the Scratch Team
 const ArgumentType = require('../../extension-support/argument-type');
 const BlockType = require('../../extension-support/block-type');
@@ -73,6 +75,8 @@ let the_locale = null;
 
 let ws_ip_address = '127.0.0.1';
 
+let valid_resistor_pull_states = ['pull_high', 'pull_low', 'pull_none']
+
 // common
 const FormDigitalWrite = {
     'pt-br': 'Escrever Pino Digital [PIN]como[ON_OFF]',
@@ -84,6 +88,11 @@ const FormDigitalWrite = {
     'pl': 'Ustaw cyfrowy Pin [PIN] na [ON_OFF]',
     'de': 'Setze digitalen Pin [PIN] [ON_OFF]',
     'ja': 'デジタル・ピン [PIN] に [ON_OFF] を出力',
+};
+
+const FormPwmFrequency = {
+    'en': 'Set PWM-Pin [PIN] PWM-Frequenz to [FREQUENCY] Hz',
+    'de': 'Setze PWM-Pin [PIN] PWM-Frequenz auf [FREQUENCY] Hz',
 };
 
 const FormPwmWrite = {
@@ -145,6 +154,11 @@ const FormDigitalRead = {
     'de': 'Lies digitalen Pin [PIN]',
     'ja': 'デジタル・ピン [PIN] から入力',
 };
+
+const FormSetInputResistorPullState = {
+    'en': 'Set pin [PIN] pull state to [PULL_STATE]',
+    'de': 'Setze Pin [PIN] Status auf [PULL_STATE]',
+}
 
 const FormSonarRead = {
     'pt-br': 'Ler Distância: Sonar em T[TRIGGER_PIN] E[ECHO_PIN]',
@@ -285,7 +299,7 @@ class Scratch3RpiOneGPIO {
                     blockType: BlockType.COMMAND,
                     text: FormDigitalWrite[the_locale],
 
-            arguments: {
+                    arguments: {
                         PIN: {
                             type: ArgumentType.NUMBER,
                             defaultValue: '4',
@@ -295,6 +309,23 @@ class Scratch3RpiOneGPIO {
                             type: ArgumentType.NUMBER,
                             defaultValue: '0',
                             menu: "on_off"
+                        }
+                    }
+                },
+
+                {
+                    opcode: 'pwm_frequency',
+                    blockType: BlockType.COMMAND,
+                    text: FormPwmFrequency[the_locale],
+                    arguments: {
+                        PIN: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: '4',
+                            menu: 'pwm_pins'
+                        },
+                        FREQUENCY: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: 50000, //50KHz
                         }
                     }
                 },
@@ -314,27 +345,27 @@ class Scratch3RpiOneGPIO {
                         }
                     }
                 },
-                '---',
-                {
-                    opcode: 'tone_on',
-                    blockType: BlockType.COMMAND,
-                    text: FormTone[the_locale],
-                    arguments: {
-                        PIN: {
-                            type: ArgumentType.NUMBER,
-                            defaultValue: '4',
-                            menu: 'digital_pins'
-                        },
-                        FREQ: {
-                            type: ArgumentType.NUMBER,
-                            defaultValue: 100,
-                        },
-                        DURATION: {
-                            type: ArgumentType.NUMBER,
-                            defaultValue: 50,
-                        }
-                    }
-                },
+                // '---',
+                // {
+                //     opcode: 'tone_on',
+                //     blockType: BlockType.COMMAND,
+                //     text: FormTone[the_locale],
+                //     arguments: {
+                //         PIN: {
+                //             type: ArgumentType.NUMBER,
+                //             defaultValue: '4',
+                //             menu: 'digital_pins'
+                //         },
+                //         FREQ: {
+                //             type: ArgumentType.NUMBER,
+                //             defaultValue: 100,
+                //         },
+                //         DURATION: {
+                //             type: ArgumentType.NUMBER,
+                //             defaultValue: 50,
+                //         }
+                //     }
+                // },
 
                 '---',
                 {
@@ -370,23 +401,41 @@ class Scratch3RpiOneGPIO {
                 },
                 '---',
                 {
-                    opcode: 'sonar_read',
-                    blockType: BlockType.REPORTER,
-                    text: FormSonarRead[the_locale],
-
-            arguments: {
-                        TRIGGER_PIN: {
+                    opcode: 'digital_read_pull_state',
+                    blockType: BlockType.COMMAND,
+                    text: FormSetInputResistorPullState[the_locale],
+                    arguments: {
+                        PIN: {
                             type: ArgumentType.NUMBER,
                             defaultValue: '4',
                             menu: 'digital_pins'
                         },
-                        ECHO_PIN: {
-                            type: ArgumentType.NUMBER,
-                            defaultValue: '5',
-                            menu: 'digital_pins'
+                        PULL_STATE: {
+                            type: ArgumentType.STRING,
+                            defaultValue: 'pull_up',
+                            menu: 'pull_state'
                         }
                     }
                 },
+                // '---',
+                // {
+                //     opcode: 'sonar_read',
+                //     blockType: BlockType.REPORTER,
+                //     text: FormSonarRead[the_locale],
+                //
+                //     arguments: {
+                //         TRIGGER_PIN: {
+                //             type: ArgumentType.NUMBER,
+                //             defaultValue: '4',
+                //             menu: 'digital_pins'
+                //         },
+                //         ECHO_PIN: {
+                //             type: ArgumentType.NUMBER,
+                //             defaultValue: '5',
+                //             menu: 'digital_pins'
+                //         }
+                //     }
+                // },
             ],
             menus: {
                 digital_pins: {
@@ -407,6 +456,10 @@ class Scratch3RpiOneGPIO {
                 on_off: {
                     acceptReporters: true,
                     items: ['0', '1']
+                },
+                pull_state: {
+                    acceptReporters: false,
+                    items: valid_resistor_pull_states
                 }
             }
         };
@@ -460,6 +513,47 @@ class Scratch3RpiOneGPIO {
         }
     }
 
+    //pwm-frequency
+    pwm_frequency(args) {
+        if (!connected) {
+            if (!connection_pending) {
+                this.connect();
+                connection_pending = true;
+            }
+        }
+
+        if (!connected) {
+            let callbackEntry = [this.pwm_frequency.bind(this), args];
+            wait_open.push(callbackEntry);
+        } else {
+            let pin = args['PIN'];
+            // maximum value for RPi and Arduino
+            let the_max = 255;
+            pin = parseInt(pin, 10);
+
+            let value = args['FREQUENCY'];
+            value = parseInt(value, 10);
+
+            // value = the_max * (value / 100);
+            // value = Math.round(value);
+            // if (pin_modes[pin] !== PWM) {
+            //     pin_modes[pin] = PWM;
+            //     msg = {"command": "set_mode_pwm", "pin": pin};
+            //     msg = JSON.stringify(msg);
+            //     window.socketr.send(msg);
+            // }
+
+            // see https://abyz.me.uk/rpi/pigpio/python.html#set_PWM_frequency
+            //       # only these allowed? (for sample rate 5:
+            // maybe only allow these??
+            // 8000  4000  2000 1600 1000  800  500  400  320
+            //  250   200   160  100   80   50   40   20   10
+            msg = {"command": "set_pwm_frequency", "pin": pin, "frequency": value};
+            msg = JSON.stringify(msg);
+            window.socketr.send(msg);
+
+        }
+    }
     //pwm
     pwm_write(args) {
         if (!connected) {
@@ -596,6 +690,39 @@ class Scratch3RpiOneGPIO {
         }
     }
 
+    digital_read_pull_state(args) {
+        if (!connected) {
+            if (!connection_pending) {
+                this.connect();
+                connection_pending = true;
+            }
+        }
+        if (!connected) {
+            let callbackEntry = [this.digital_read_pull_state.bind(this), args];
+            wait_open.push(callbackEntry);
+        } else {
+            let pin = args['PIN'];
+            pin = parseInt(pin, 10);
+
+            let pull_state = args['PULL_STATE'];
+
+            if (valid_resistor_pull_states.includes(pull_state) === false) {
+                pull_state = 'pull_none';
+            }
+
+            if (pin_modes[pin] !== DIGITAL_INPUT) {
+                //TODO ??
+            }
+
+            //TODO this also sets the pin to digital input?
+            msg = {"command": "set_pull_state", "pin": pin, "pull_state": pull_state};
+            msg = JSON.stringify(msg);
+            window.socketr.send(msg);
+        }
+    }
+
+
+
     sonar_read(args) {
         if (!connected) {
             if (!connection_pending) {
@@ -625,36 +752,36 @@ class Scratch3RpiOneGPIO {
         }
     }
 
-    _setLocale () {
+    _setLocale() {
         let now_locale = '';
-        switch (formatMessage.setup().locale){
+        switch (formatMessage.setup().locale) {
             case 'pt-br':
             case 'pt':
-                now_locale='pt-br';
+                now_locale = 'pt-br';
                 break;
             case 'en':
-                now_locale='en';
+                now_locale = 'en';
                 break;
             case 'fr':
-                now_locale='fr';
+                now_locale = 'fr';
                 break;
             case 'zh-tw':
-                now_locale= 'zh-tw';
+                now_locale = 'zh-tw';
                 break;
             case 'zh-cn':
-                now_locale= 'zh-cn';
+                now_locale = 'zh-cn';
                 break;
             case 'pl':
-                now_locale='pl';
+                now_locale = 'pl';
                 break;
             case 'ja':
-                now_locale='ja';
+                now_locale = 'ja';
                 break;
             case 'de':
-                now_locale= 'de';
+                now_locale = 'de';
                 break;
             default:
-                now_locale='en';
+                now_locale = 'en';
                 break;
         }
         return now_locale;
@@ -705,7 +832,8 @@ class Scratch3RpiOneGPIO {
             pin_modes.fill(-1);
             if (alerted === false) {
                 alerted = true;
-                alert(FormWSClosed[the_locale]);}
+                alert(FormWSClosed[the_locale]);
+            }
             connected = false;
         };
 
