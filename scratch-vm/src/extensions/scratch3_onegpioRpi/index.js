@@ -715,7 +715,7 @@ class Scratch3RpiOneGPIO {
             }
 
             //TODO this also sets the pin to digital input?
-            msg = {"command": "set_pull_state", "pin": pin, "pull_state": pull_state};
+            msg = {"command": "set_mode_digital_input_pull_state", "pin": pin, "pull_state": pull_state};
             msg = JSON.stringify(msg);
             window.socketr.send(msg);
         }
