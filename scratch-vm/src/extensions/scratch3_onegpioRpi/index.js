@@ -589,7 +589,7 @@ class Scratch3RpiOneGPIO {
                     items: valid_resistor_pull_states
                 },
                 color_led: {
-                    acceptReporters: false,
+                    acceptReporters: true,
                     items: ['1', '2', '3', '4']
                 },
                 out_list: {
@@ -898,6 +898,7 @@ class Scratch3RpiOneGPIO {
         } else {
             let ledColor = args['COLOR'];
             let ledNumber = parseInt(args['LED'], 10)
+            // Cast.toNumber()
 
             console.log(ledNumber)
             if (isNaN(ledNumber)) {
@@ -906,7 +907,7 @@ class Scratch3RpiOneGPIO {
 
             let ledIndex = ledNumber - 1 //indexing starts at 0
 
-            ledIndex = Math.max(0, Math.min(ledNumber, 3))
+            ledIndex = Math.max(0, Math.min(ledIndex, 3))
 
             let rgbObj = Cast.toRgbColorObject(ledColor)
 
@@ -938,7 +939,7 @@ class Scratch3RpiOneGPIO {
             }
 
             let ledIndex = ledNumber - 1 //indexing starts at 0
-            ledIndex = Math.max(0, Math.min(ledNumber, 3))
+            ledIndex = Math.max(0, Math.min(ledIndex, 3))
 
             msg = {"command": "clear_rgb_led_color", "led": ledIndex};
             msg = JSON.stringify(msg);
