@@ -25,8 +25,13 @@ Arduino Uno, ESP-8666, or Raspberry Pi
 const ArgumentType = require('../../extension-support/argument-type');
 const BlockType = require('../../extension-support/block-type');
 const formatMessage = require('format-message');
+const Cast = require('../../util/cast.js');
 
 require('sweetalert');
+const Variable = require("../../engine/variable");
+const Scratch3DataBlocks = require("../../blocks/scratch3_data");
+const util = require("util");
+const Color = require("../../util/color");
 
 // The following are constants used within the extension
 
@@ -155,6 +160,11 @@ const FormDigitalRead = {
     'ja': 'デジタル・ピン [PIN] から入力',
 };
 
+const FormRGBSetColorLED = {
+    'en': 'Sets LED [LED] to color [COLOR]',
+    'de': 'Setzt LED [LED] auf Farbe [COLOR]',
+};
+
 const FormSetInputResistorPullState = {
     'en': 'Set pin [PIN] pull state to [PULL_STATE]',
     'de': 'Setze Pin [PIN] Status auf [PULL_STATE]',
@@ -259,6 +269,20 @@ const FormAlrt = {
         text: "ESP-8266 の IP アドレスを IP アドレス・ブロックに記入して下さい",
         icon: "info",
     },
+};
+
+const FromStringCharOccurrenceCount = {
+    'en': 'Counts the occurrences of [STR_SEARCH] in [STR_LONG]',
+    'de': 'Zählt die Vorkommen von [STR_SEARCH] in [STR_LONG]',
+};
+const FromStringSplitGetItem = {
+    'en': 'Splits the text [CONTENT] by [DELIMITER] and returns the [INDEX] item',
+    'de': 'Teilt den Text [CONTENT] bei den Vorkommen von [DELIMITER] und gibt das Element an Position [INDEX] zurück',
+};
+
+const FromStringSplitIntoList = {
+    'en': 'Splits the text [CONTENT] by [DELIMITER] and write it into list [LIST]',
+    'de': 'Teilt den Text [CONTENT] bei den Vorkommen von [DELIMITER] und schreibe in Liste [LIST]',
 };
 
 class Scratch3RpiOneGPIO {
@@ -417,6 +441,90 @@ class Scratch3RpiOneGPIO {
                         }
                     }
                 },
+                '---',
+                {
+                    opcode: 'set_rgb_led_color',
+                    blockType: BlockType.COMMAND,
+                    text: FormRGBSetColorLED[the_locale],
+                    arguments: {
+                        LED: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: '1',
+                            menu: 'color_led'
+                        },
+                        COLOR: {
+                            type: ArgumentType.COLOR
+                        },
+                    },
+
+                },
+                '---',
+                {
+                    opcode: 'string_occurrence_count',
+                    blockType: BlockType.REPORTER,
+                    text: FromStringCharOccurrenceCount[the_locale],
+                    arguments: {
+                        STR_SEARCH: {
+                            type: ArgumentType.STRING,
+                            defaultValue: ',',
+                        },
+                        STR_LONG: {
+                            type: ArgumentType.STRING,
+                            defaultValue: '1,2,3',
+                        },
+                    }
+                },
+                '---',
+                {
+                    opcode: 'string_split_get_item',
+                    blockType: BlockType.REPORTER,
+                    text: FromStringSplitGetItem[the_locale],
+                    arguments: {
+                        CONTENT: {
+                            type: ArgumentType.STRING,
+                            defaultValue: '1,2,3',
+                        },
+                        DELIMITER: {
+                            type: ArgumentType.STRING,
+                            defaultValue: ',',
+                        },
+                        INDEX: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: 1,
+                        },
+                    },
+                },
+                //not working
+                // '---',
+                // {
+                //     opcode: 'string_split_into_list',
+                //     blockType: BlockType.COMMAND,
+                //     text: FromStringSplitIntoList[the_locale],
+                //     arguments: {
+                //         CONTENT: {
+                //             type: ArgumentType.STRING,
+                //             defaultValue: '1,2,3',
+                //         },
+                //         DELIMITER: {
+                //             type: ArgumentType.STRING,
+                //             defaultValue: ',',
+                //         },
+                //         // LIST: {
+                //         //     fieldName: 'LIST',
+                //         //     type: ArgumentType.STRING,
+                //         //     menu: 'out_list'
+                //         // }
+                //     },
+                //     fields: {
+                //         VARIABLE: {
+                //             name: 'VARIABLE',
+                //             value: '_test2',
+                //             id: '_test',
+                //             variableType: Variable.SCALAR_TYPE
+                //         }
+                //     }
+                // },
+
                 // '---',
                 // {
                 //     opcode: 'sonar_read',
@@ -460,6 +568,14 @@ class Scratch3RpiOneGPIO {
                 pull_state: {
                     acceptReporters: false,
                     items: valid_resistor_pull_states
+                },
+                color_led: {
+                    acceptReporters: false,
+                    items: ['1', '2', '3', '4']
+                },
+                out_list: {
+                    acceptReporters: true,
+                    items: ['neue Liste']
                 }
             }
         };
@@ -554,6 +670,7 @@ class Scratch3RpiOneGPIO {
 
         }
     }
+
     //pwm
     pwm_write(args) {
         if (!connected) {
@@ -710,17 +827,14 @@ class Scratch3RpiOneGPIO {
                 pull_state = 'pull_none';
             }
 
-            if (pin_modes[pin] !== DIGITAL_INPUT) {
-                //TODO ??
-            }
+            pin_modes[pin] = DIGITAL_INPUT;
 
-            //TODO this also sets the pin to digital input?
+            //TODO we made it so that the mode is set to digital input
             msg = {"command": "set_mode_digital_input_pull_state", "pin": pin, "pull_state": pull_state};
             msg = JSON.stringify(msg);
             window.socketr.send(msg);
         }
     }
-
 
 
     sonar_read(args) {
@@ -751,6 +865,86 @@ class Scratch3RpiOneGPIO {
 
         }
     }
+
+    set_rgb_led_color(args) {
+        if (!connected) {
+            if (!connection_pending) {
+                this.connect();
+                connection_pending = true;
+            }
+        }
+        if (!connected) {
+            let callbackEntry = [this.set_rgb_led_color.bind(this), args];
+            wait_open.push(callbackEntry);
+        } else {
+            let ledColor = args['COLOR'];
+            let ledNumber = parseInt(args['LED'], 10)
+
+            if (isNaN(ledNumber)) {
+                ledNumber = 1
+            }
+
+            let ledIndex = ledNumber - 1 //indexing starts at 0
+
+            ledIndex = Math.min(0, Math.max(ledNumber, 3))
+
+            let rgbObj = Cast.toRgbColorObject(ledColor)
+
+            if (rgbObj === null) {
+                rgbObj = Color.RGB_WHITE
+            }
+
+            console.log(ledColor)
+            msg = {"command": "set_led_color", "led": ledIndex, "r": rgbObj.r, "g": rgbObj.g, "b": rgbObj.b};
+            msg = JSON.stringify(msg);
+            window.socketr.send(msg);
+        }
+    }
+
+    //---- not raspi functions (maybe use in appropriate dir??) would be: scratch-vm/src/blocks/
+
+    string_occurrence_count(args) {
+        let strToSearch = Cast.toString(args['STR_SEARCH'])
+        let strContent = Cast.toString(args['STR_LONG'])
+
+        return strContent.split(strToSearch).length - 1;
+    }
+
+    string_split_get_item(args) {
+        let strContent = Cast.toString(args.CONTENT)
+        let delimiter = Cast.toString(args.DELIMITER)
+        let index = Cast.toNumber(args.INDEX)
+
+        index--; //ui is 1 based
+
+        let items = strContent.split(delimiter)
+
+        if (index < 0 || index >= items.length) {
+            return ''
+        }
+
+        return items[index]
+    }
+
+    string_split_into_list(args, util, blockDef) {
+        console.log(util)
+        console.log(args)
+        let strContent = Cast.toString(args.CONTENT)
+        let delimiter = Cast.toString(args.DELIMITER)
+
+        const list = util.target.lookupOrCreateList(
+            args.LIST.id, args.LIST.name);
+
+        let items = strContent.split(delimiter)
+
+        if (list.value.length + items.length < Scratch3DataBlocks.LIST_ITEM_LIMIT) {
+            list.value.push(...items);
+            list._monitorUpToDate = false;
+        }
+    }
+
+
+    //---- END not raspi functions
 
     _setLocale() {
         let now_locale = '';
