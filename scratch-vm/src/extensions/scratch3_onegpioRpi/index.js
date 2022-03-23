@@ -165,6 +165,11 @@ const FormRGBSetColorLED = {
     'de': 'Setzt LED [LED] auf Farbe [COLOR]',
 };
 
+const FormRGBClearColorLED = {
+    'en': 'Turn LED [LED] off',
+    'de': 'Schalte LED [LED] aus',
+};
+
 const FormSetInputResistorPullState = {
     'en': 'Set pin [PIN] pull state to [PULL_STATE]',
     'de': 'Setze Pin [PIN] Status auf [PULL_STATE]',
@@ -454,6 +459,20 @@ class Scratch3RpiOneGPIO {
                         },
                         COLOR: {
                             type: ArgumentType.COLOR
+                        },
+                    },
+
+                },
+                '---',
+                {
+                    opcode: 'clear_rgb_led_color',
+                    blockType: BlockType.COMMAND,
+                    text: FormRGBClearColorLED[the_locale],
+                    arguments: {
+                        LED: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: '1',
+                            menu: 'color_led'
                         },
                     },
 
@@ -880,13 +899,14 @@ class Scratch3RpiOneGPIO {
             let ledColor = args['COLOR'];
             let ledNumber = parseInt(args['LED'], 10)
 
+            console.log(ledNumber)
             if (isNaN(ledNumber)) {
                 ledNumber = 1
             }
 
             let ledIndex = ledNumber - 1 //indexing starts at 0
 
-            ledIndex = Math.min(0, Math.max(ledNumber, 3))
+            ledIndex = Math.max(0, Math.min(ledNumber, 3))
 
             let rgbObj = Cast.toRgbColorObject(ledColor)
 
@@ -894,8 +914,33 @@ class Scratch3RpiOneGPIO {
                 rgbObj = Color.RGB_WHITE
             }
 
-            console.log(ledColor)
-            msg = {"command": "set_led_color", "led": ledIndex, "r": rgbObj.r, "g": rgbObj.g, "b": rgbObj.b};
+            msg = {"command": "set_rgb_led_color", "led": ledIndex, "r": rgbObj.r, "g": rgbObj.g, "b": rgbObj.b};
+            msg = JSON.stringify(msg);
+            window.socketr.send(msg);
+        }
+    }
+
+    clear_rgb_led_color(args) {
+        if (!connected) {
+            if (!connection_pending) {
+                this.connect();
+                connection_pending = true;
+            }
+        }
+        if (!connected) {
+            let callbackEntry = [this.clear_rgb_led_color.bind(this), args];
+            wait_open.push(callbackEntry);
+        } else {
+            let ledNumber = parseInt(args['LED'], 10)
+
+            if (isNaN(ledNumber)) {
+                ledNumber = 1
+            }
+
+            let ledIndex = ledNumber - 1 //indexing starts at 0
+            ledIndex = Math.max(0, Math.min(ledNumber, 3))
+
+            msg = {"command": "clear_rgb_led_color", "led": ledIndex};
             msg = JSON.stringify(msg);
             window.socketr.send(msg);
         }
