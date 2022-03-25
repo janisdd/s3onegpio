@@ -1262,28 +1262,41 @@ class Runtime extends EventEmitter {
             fieldName = argTypeInfo.fieldType;
         }
 
-        // <value> is the ScratchBlocks name for a block input.
-        if (valueName) {
-            context.inputList.push(`<value name="${placeholder}">`);
-        }
+        if (!argInfo.fieldName) {
+            // <value> is the ScratchBlocks name for a block input.
+            if (valueName) {
+                context.inputList.push(`<value name="${placeholder}">`);
+            }
 
-        // The <shadow> is a placeholder for a reporter and is visible when there's no reporter in this input.
-        // Boolean inputs don't need to specify a shadow in the XML.
-        if (shadowType) {
-            context.inputList.push(`<shadow type="${shadowType}">`);
-        }
+            // The <shadow> is a placeholder for a reporter and is visible when there's no reporter in this input.
+            // Boolean inputs don't need to specify a shadow in the XML.
+            if (shadowType) {
+                context.inputList.push(`<shadow type="${shadowType}">`);
+            }
 
-        // A <field> displays a dynamic value: a user-editable text field, a drop-down menu, etc.
-        if (fieldName) {
-            context.inputList.push(`<field name="${fieldName}">${defaultValue}</field>`);
-        }
+            // A <field> displays a dynamic value: a user-editable text field, a drop-down menu, etc.
+            if (fieldName) {
+                context.inputList.push(`<field name="${fieldName}">${defaultValue}</field>`);
+            }
 
-        if (shadowType) {
-            context.inputList.push('</shadow>');
-        }
+            if (shadowType) {
+                context.inputList.push('</shadow>');
+            }
 
-        if (valueName) {
-            context.inputList.push('</value>');
+            if (valueName) {
+                context.inputList.push('</value>');
+            }
+        } else {
+            //problem: we add the var to the wrong "scope" (stage/sprite)
+            //this.targers, then check .stage? see getTargetForStage
+            //see https://developers.google.com/blockly/guides/create-custom-blocks/define-blocks#json
+            argJSON.type = 'field_variable';
+            // argInfo.variable = this._convertVariableName(argInfo.fieldName);
+            // this.createNewGlobalVariable()
+            argInfo.variableTypes = [argInfo.variableType];
+            let varId = uid();
+            let variable = this.createNewGlobalVariable(argInfo.value, varId, argInfo.variableType);
+            context.inputList.push(`<field name="${argInfo.fieldName}" id="${variable.id}" variableType="${argInfo.variableType}">${argInfo.value}</field>`);
         }
 
         const argsName = `args${context.outLineNum}`;
