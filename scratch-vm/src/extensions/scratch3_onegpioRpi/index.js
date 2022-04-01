@@ -32,6 +32,7 @@ const Variable = require("../../engine/variable");
 const Scratch3DataBlocks = require("../../blocks/scratch3_data");
 const util = require("util");
 const Color = require("../../util/color");
+const QrScanner = require('qr-scanner').default;
 
 // The following are constants used within the extension
 
@@ -81,6 +82,9 @@ let the_locale = null;
 let ws_ip_address = '127.0.0.1';
 
 let valid_resistor_pull_states = ['pull_high', 'pull_low', 'pull_none']
+
+/** @type HTMLCanvasElement */
+var my_video_image_canvas = null
 
 // common
 const FormDigitalWrite = {
@@ -288,6 +292,16 @@ const FromStringSplitGetItem = {
 const FromStringSplitIntoList = {
     'en': 'Splits the text [CONTENT] by [DELIMITER] and write it into list [LIST]',
     'de': 'Teilt den Text [CONTENT] bei den Vorkommen von [DELIMITER] und schreibe in Liste [LIST]',
+};
+
+const FromStringGetQrCode = {
+    'en': 'Try to scan qr code',
+    'de': 'Versuche QR Code zu scannen',
+};
+
+const FromStringReadPropFromJson = {
+    'en': 'Read prop [PROPERTY] from [JSON]',
+    'de': 'Lies Eigenschaft [PROPERTY] aus [JSON]',
 };
 
 class Scratch3RpiOneGPIO {
@@ -567,6 +581,77 @@ class Scratch3RpiOneGPIO {
                         },
                     },
                 },
+                {
+                    opcode: 'try_scan_qr_code_as_json_string',
+                    blockType: BlockType.REPORTER,
+                    text: FromStringGetQrCode[the_locale],
+                    arguments: {},
+                },
+                {
+                    opcode: 'read_prop_from_json',
+                    blockType: BlockType.REPORTER,
+                    text: FromStringReadPropFromJson[the_locale],
+                    arguments: {
+                        JSON: {
+                            type: ArgumentType.STRING,
+                            defaultValue: '{"test":"123"}',
+                        },
+                        PROPERTY: {
+                            type: ArgumentType.STRING,
+                            defaultValue: "test",
+                        }
+                    },
+                },
+                //not working
+                // '---',
+                // {
+                //     opcode: 'string_split_into_list',
+                //     blockType: BlockType.COMMAND,
+                //     text: FromStringSplitIntoList[the_locale],
+                //     arguments: {
+                //         CONTENT: {
+                //             type: ArgumentType.STRING,
+                //             defaultValue: '1,2,3',
+                //         },
+                //         DELIMITER: {
+                //             type: ArgumentType.STRING,
+                //             defaultValue: ',',
+                //         },
+                //         // LIST: {
+                //         //     fieldName: 'LIST',
+                //         //     type: ArgumentType.STRING,
+                //         //     menu: 'out_list'
+                //         // }
+                //     },
+                //     fields: {
+                //         VARIABLE: {
+                //             name: 'VARIABLE',
+                //             value: '_test2',
+                //             id: '_test',
+                //             variableType: Variable.SCALAR_TYPE
+                //         }
+                //     }
+                // },
+
+                // '---',
+                // {
+                //     opcode: 'sonar_read',
+                //     blockType: BlockType.REPORTER,
+                //     text: FormSonarRead[the_locale],
+                //
+                //     arguments: {
+                //         TRIGGER_PIN: {
+                //             type: ArgumentType.NUMBER,
+                //             defaultValue: '4',
+                //             menu: 'digital_pins'
+                //         },
+                //         ECHO_PIN: {
+                //             type: ArgumentType.NUMBER,
+                //             defaultValue: '5',
+                //             menu: 'digital_pins'
+                //         }
+                //     }
+                // },
             ],
             menus: {
                 digital_pins: {
@@ -990,6 +1075,137 @@ class Scratch3RpiOneGPIO {
         if (list.value.length + items.length < Scratch3DataBlocks.LIST_ITEM_LIMIT) {
             list.value.push(...items);
             list._monitorUpToDate = false;
+        }
+    }
+
+    try_scan_qr_code_as_json_string(args, util, blockDef) {
+
+        //TODO return null if video is not enabled
+
+        if (!this.runtime.ioDevices.video.provider.videoReady) {
+            console.log(`video not ready`)
+            return ""
+        }
+
+        if (!my_video_image_canvas) {
+            my_video_image_canvas = document.createElement('canvas');
+        }
+        const video = this.runtime.ioDevices.video.provider.video
+        let context = my_video_image_canvas.getContext('2d');
+        let [w, h] = [video.videoWidth, video.videoHeight]
+        my_video_image_canvas.width = w;
+        my_video_image_canvas.height = h;
+        context.drawImage(video, 0, 0, w, h);
+        let dataUrl = my_video_image_canvas.toDataURL() //maybe blobs?
+        // console.log(dataUrl)
+
+        return new Promise((resolve, reject) => {
+
+            QrScanner.scanImage(dataUrl, {canvas: undefined}) //we need to supply some setting to get a proper result type
+                .then(result => {
+                    console.log(result)
+
+                    let jsonString = result.data
+                    resolve(jsonString)
+
+                    // try {
+                    //     let jsonObj = JSON.parse(jsonString)
+                    //     console.log(jsonObj)
+                    //     return jsonObj
+                    // } catch (e) {
+                    //     console.log(`error parsing json: ${e}`)
+                    //     return null
+                    // }
+                    // return result
+                })
+                .catch(err => {
+                    console.log(err)
+                    // return null
+                    resolve("")
+                })
+        })
+
+        // let maxRetrys = 10
+        // console.log(this.runtime.ioDevices.video)
+        // this.runtime.ioDevices.video.enableVideo()
+        //     .then(() => {
+        //         const video = this.runtime.ioDevices.video.provider.video
+        //         console.log(`video ready`)
+        //         console.log(this.runtime.ioDevices.video.provider.video)
+        //
+        //         if (!my_video_image_canvas) {
+        //             my_video_image_canvas = document.createElement('canvas');
+        //         }
+        //
+        //         let checkVideoRead = () => new Promise((resolve, reject) => {
+        //
+        //             let retryCount = 0
+        //             let handle = setInterval(() => {
+        //
+        //                 if (retryCount >= maxRetrys) {
+        //                     clearInterval(handle)
+        //                     reject(`max retrys reached`)
+        //                 }
+        //
+        //                 retryCount++
+        //                 if (this.runtime.ioDevices.video.provider.videoReady) {
+        //                     console.log(this.runtime.ioDevices.video.provider.videoReady)
+        //                     console.log(this.runtime.ioDevices.video.provider.video.videoWidth)
+        //                     clearInterval(handle)
+        //                     resolve()
+        //                 }
+        //
+        //             }, 100)
+        //
+        //         })
+        //
+        //         checkVideoRead().then(() => {
+        //
+        //             let context = my_video_image_canvas.getContext('2d');
+        //             let [w, h] = [video.videoWidth, video.videoHeight]
+        //             my_video_image_canvas.width = w;
+        //             my_video_image_canvas.height = h;
+        //             context.drawImage(video, 0, 0, w, h);
+        //             let dataUrl = my_video_image_canvas.toDataURL() //maybe blobs?
+        //             console.log(dataUrl)
+        //
+        //             QrScanner.scanImage(dataUrl, {})
+        //                 .then(result => {
+        //                     console.log(result)
+        //                     // return result
+        //                 })
+        //                 .catch(err => {
+        //                     console.log(err)
+        //                     // return null
+        //                 })
+        //                 .finally(() => {
+        //                     this.runtime.ioDevices.video.disableVideo()
+        //                 })
+        //         })
+        //             .catch((reason) => {
+        //                 console.error(reason)
+        //             })
+        //     })
+
+
+    }
+
+    read_prop_from_json(args, util, blockDef) {
+
+        let jsonString = args.JSON
+        let propName = args.PROPERTY
+
+        try {
+            let jsonObj = JSON.parse(jsonString)
+            let propValue = jsonObj[propName]
+            if (propValue) {
+                return propValue
+            } else {
+                return ""
+            }
+        } catch (e) {
+            console.log(`error parsing json: ${e}`)
+            return ""
         }
     }
 

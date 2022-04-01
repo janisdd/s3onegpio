@@ -53,7 +53,8 @@
     "socket.io-client": "2.0.4",
     "sweetalert": "^2.1.2",
     "text-encoding": "0.7.0",
-    "worker-loader": "^1.1.1"
+    "worker-loader": "^1.1.1",
+    "qr-scanner": "1.4.1"
   },
   "devDependencies": {
     "@babel/core": "^7.1.2",
