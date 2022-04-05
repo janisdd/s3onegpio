@@ -309,6 +309,11 @@ const FromStringGetKeysFromJsonAsStringList = {
     'de': 'Gib alle Schlüssel zurück von [JSON]',
 };
 
+const FromStringComment = {
+    'en': 'Comment [TEXT]',
+    'de': 'Kommentar [TEXT]',
+};
+
 class Scratch3RpiOneGPIO {
     constructor(runtime) {
         the_locale = this._setLocale();
@@ -618,6 +623,17 @@ class Scratch3RpiOneGPIO {
                         JSON: {
                             type: ArgumentType.STRING,
                             defaultValue: '{"S1":"nur","S2":"ein","S3":"test"}',
+                        },
+                    },
+                },
+                {
+                    opcode: 'empty_comment_block',
+                    blockType: BlockType.COMMAND,
+                    text: FromStringComment[the_locale],
+                    arguments: {
+                        TEXT: {
+                            type: ArgumentType.STRING,
+                            defaultValue: 'Nur ein Kommentar',
                         },
                     },
                 },
@@ -1246,6 +1262,9 @@ class Scratch3RpiOneGPIO {
             console.log(`error parsing json: ${e}`)
             return ""
         }
+    }
+    empty_comment_block(args, util, blockDef) {
+
     }
 
     console_log_var(args, util, blockDef) {
