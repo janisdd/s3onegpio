@@ -304,6 +304,11 @@ const FromStringReadPropFromJson = {
     'de': 'Lies Eigenschaft [PROPERTY] aus [JSON]',
 };
 
+const FromStringGetKeysFromJsonAsStringList = {
+    'en': 'Return all keys of [JSON]',
+    'de': 'Gib alle Schlüssel zurück von [JSON]',
+};
+
 class Scratch3RpiOneGPIO {
     constructor(runtime) {
         the_locale = this._setLocale();
@@ -603,6 +608,17 @@ class Scratch3RpiOneGPIO {
                             type: ArgumentType.STRING,
                             defaultValue: "test",
                         }
+                    },
+                },
+                {
+                    opcode: 'read_json_keys_as_string_list',
+                    blockType: BlockType.REPORTER,
+                    text: FromStringGetKeysFromJsonAsStringList[the_locale],
+                    arguments: {
+                        JSON: {
+                            type: ArgumentType.STRING,
+                            defaultValue: '{"S1":"nur","S2":"ein","S3":"test"}',
+                        },
                     },
                 },
                 //not working
@@ -1214,6 +1230,18 @@ class Scratch3RpiOneGPIO {
             } else {
                 return ""
             }
+        } catch (e) {
+            console.log(`error parsing json: ${e}`)
+            return ""
+        }
+    }
+
+    read_json_keys_as_string_list(args, util, blockDef) {
+        let jsonString = args.JSON
+
+        try {
+            let jsonObj = JSON.parse(jsonString)
+            return Object.keys(jsonObj).join(`,`)
         } catch (e) {
             console.log(`error parsing json: ${e}`)
             return ""
