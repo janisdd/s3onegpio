@@ -374,7 +374,7 @@ class Scratch3RpiOneGPIO {
                     //         variableType: Variable.SCALAR_TYPE
                     //     }
                     // }
-                },
+                // },
                 {
                     opcode: 'ip_address',
                     blockType: BlockType.COMMAND,
