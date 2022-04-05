@@ -341,32 +341,32 @@ class Scratch3RpiOneGPIO {
                 //         }
                 //     }
                 // },
-                {
-                    opcode: 'string_split_into_list',
-                    blockType: BlockType.COMMAND,
-                    text: FromStringSplitIntoList[the_locale],
-                    arguments: {
-                        CONTENT: {
-                            type: ArgumentType.STRING,
-                            defaultValue: '1,2,3',
-                        },
-                        DELIMITER: {
-                            type: ArgumentType.STRING,
-                            defaultValue: ',',
-                        },
-                        // VARIABLE: {
-                        //     // id: '???.-my variable',
-                        //     value: 'meine Liste2',
-                        //     fieldName: 'VARIABLE',
-                        //     variableType: Variable.LIST_TYPE
-                        // }
-                        LIST: {
-                            // id: '???.-my variable',
-                            value: 'meine Liste2',
-                            fieldName: 'LIST',
-                            variableType: Variable.LIST_TYPE
-                        }
-                    },
+                // {
+                //     opcode: 'string_split_into_list',
+                //     blockType: BlockType.COMMAND,
+                //     text: FromStringSplitIntoList[the_locale],
+                //     arguments: {
+                //         CONTENT: {
+                //             type: ArgumentType.STRING,
+                //             defaultValue: '1,2,3',
+                //         },
+                //         DELIMITER: {
+                //             type: ArgumentType.STRING,
+                //             defaultValue: ',',
+                //         },
+                //         // VARIABLE: {
+                //         //     // id: '???.-my variable',
+                //         //     value: 'meine Liste2',
+                //         //     fieldName: 'VARIABLE',
+                //         //     variableType: Variable.LIST_TYPE
+                //         // }
+                //         LIST: {
+                //             // id: '???.-my variable',
+                //             value: 'meine Liste2',
+                //             fieldName: 'LIST',
+                //             variableType: Variable.LIST_TYPE
+                //         }
+                //     },
                     // fields: {
                     //     VARIABLE: {
                     //
