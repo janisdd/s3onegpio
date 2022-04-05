@@ -410,22 +410,23 @@ class Scratch3RpiOneGPIO {
                     }
                 },
 
-                {
-                    opcode: 'pwm_frequency',
-                    blockType: BlockType.COMMAND,
-                    text: FormPwmFrequency[the_locale],
-                    arguments: {
-                        PIN: {
-                            type: ArgumentType.NUMBER,
-                            defaultValue: '4',
-                            menu: 'pwm_pins'
-                        },
-                        FREQUENCY: {
-                            type: ArgumentType.NUMBER,
-                            defaultValue: 50000, //50KHz
-                        }
-                    }
-                },
+                //not needed
+                // {
+                //     opcode: 'pwm_frequency',
+                //     blockType: BlockType.COMMAND,
+                //     text: FormPwmFrequency[the_locale],
+                //     arguments: {
+                //         PIN: {
+                //             type: ArgumentType.NUMBER,
+                //             defaultValue: '4',
+                //             menu: 'pwm_pins'
+                //         },
+                //         FREQUENCY: {
+                //             type: ArgumentType.NUMBER,
+                //             defaultValue: 50000, //50KHz
+                //         }
+                //     }
+                // },
                 {
                     opcode: 'pwm_write',
                     blockType: BlockType.COMMAND,
@@ -443,6 +444,7 @@ class Scratch3RpiOneGPIO {
                     }
                 },
                 // '---',
+                //not needed
                 // {
                 //     opcode: 'tone_on',
                 //     blockType: BlockType.COMMAND,
@@ -464,26 +466,27 @@ class Scratch3RpiOneGPIO {
                 //     }
                 // },
 
-                '---',
-                {
-                    opcode: 'servo',
-                    blockType: BlockType.COMMAND,
-                    text: FormServo[the_locale],
-                    arguments: {
-                        PIN: {
-                            type: ArgumentType.NUMBER,
-                            defaultValue: '4',
-                            menu: 'digital_pins'
-                        },
-                        ANGLE: {
-                            type: ArgumentType.NUMBER,
-                            defaultValue: 90,
-                        },
+                // '---',
+                //not needed currently
+                // {
+                //     opcode: 'servo',
+                //     blockType: BlockType.COMMAND,
+                //     text: FormServo[the_locale],
+                //     arguments: {
+                //         PIN: {
+                //             type: ArgumentType.NUMBER,
+                //             defaultValue: '4',
+                //             menu: 'digital_pins'
+                //         },
+                //         ANGLE: {
+                //             type: ArgumentType.NUMBER,
+                //             defaultValue: 90,
+                //         },
+                //
+                //     }
+                // },
 
-                    }
-                },
-
-                '---',
+                // '---',
                 {
                     opcode: 'digital_read',
                     blockType: BlockType.REPORTER,
@@ -496,7 +499,7 @@ class Scratch3RpiOneGPIO {
                         },
                     }
                 },
-                '---',
+                // '---',
                 {
                     opcode: 'digital_read_pull_state',
                     blockType: BlockType.COMMAND,
@@ -514,7 +517,7 @@ class Scratch3RpiOneGPIO {
                         }
                     }
                 },
-                '---',
+                // '---',
                 {
                     opcode: 'set_rgb_led_color',
                     blockType: BlockType.COMMAND,
@@ -531,7 +534,7 @@ class Scratch3RpiOneGPIO {
                     },
 
                 },
-                '---',
+                // '---',
                 {
                     opcode: 'clear_rgb_led_color',
                     blockType: BlockType.COMMAND,
@@ -545,7 +548,7 @@ class Scratch3RpiOneGPIO {
                     },
 
                 },
-                '---',
+                // '---',
                 {
                     opcode: 'string_occurrence_count',
                     blockType: BlockType.REPORTER,
@@ -561,7 +564,7 @@ class Scratch3RpiOneGPIO {
                         },
                     }
                 },
-                '---',
+                // '---',
                 {
                     opcode: 'string_split_get_item',
                     blockType: BlockType.REPORTER,
