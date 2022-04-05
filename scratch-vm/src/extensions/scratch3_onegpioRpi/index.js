@@ -1080,8 +1080,6 @@ class Scratch3RpiOneGPIO {
 
     try_scan_qr_code_as_json_string(args, util, blockDef) {
 
-        //TODO return null if video is not enabled
-
         if (!this.runtime.ioDevices.video.provider.videoReady) {
             console.log(`video not ready`)
             return ""
@@ -1199,6 +1197,16 @@ class Scratch3RpiOneGPIO {
             let jsonObj = JSON.parse(jsonString)
             let propValue = jsonObj[propName]
             if (propValue) {
+
+                if (Array.isArray(propValue)) {
+                    //could be a list of objects... make all strings (scratch converts numbers to strings and vice versa as needed)
+                    return propValue.map(p => Cast.toString(p)).join(`,`) //use the split block...
+                }
+
+                if (typeof propValue === 'object') {
+                    return JSON.stringify(propValue) //this way we can call this method again and get nested props...
+                }
+
                 return propValue
             } else {
                 return ""
