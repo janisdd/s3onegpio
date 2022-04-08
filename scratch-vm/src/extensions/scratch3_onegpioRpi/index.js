@@ -69,6 +69,7 @@ let connected = false;
 // arrays to hold input values
 let digital_inputs = new Array(32);
 let analog_inputs = new Array(8);
+let last_ir_key = -1;
 
 // flag to indicate if a websocket connect was
 // ever attempted.
@@ -102,6 +103,11 @@ const FormDigitalWrite = {
 const FormPwmFrequency = {
     'en': 'Set PWM-Pin [PIN] PWM-Frequenz to [FREQUENCY] Hz',
     'de': 'Setze PWM-Pin [PIN] PWM-Frequenz auf [FREQUENCY] Hz',
+};
+
+const FormGetIRKey = {
+    'en': 'Get IR-Key',
+    'de': 'Lies IR-Taste',
 };
 
 const FormPwmWrite = {
@@ -451,6 +457,13 @@ class Scratch3RpiOneGPIO {
                             type: ArgumentType.NUMBER,
                             defaultValue: '50',
                         }
+                    }
+                },
+                {
+                    opcode: 'read_ir_key', //TODO test
+                    blockType: BlockType.REPORTER,
+                    text: FormGetIRKey[the_locale],
+                    arguments: {
                     }
                 },
                 // '---',
@@ -848,6 +861,25 @@ class Scratch3RpiOneGPIO {
             msg = JSON.stringify(msg);
             window.socketr.send(msg);
 
+        }
+    }
+
+    read_ir_key(args) {
+        if (!connected) {
+            if (!connection_pending) {
+                this.connect();
+                connection_pending = true;
+            }
+        }
+
+        if (!connected) {
+            let callbackEntry = [this.read_ir_key.bind(this), args];
+            wait_open.push(callbackEntry);
+        } else {
+            msg = {"command": "read_ir_key"};
+            msg = JSON.stringify(msg);
+            window.socketr.send(msg);
+            return last_ir_key
         }
     }
 
@@ -1335,6 +1367,7 @@ class Scratch3RpiOneGPIO {
 
             digital_inputs.fill(0);
             analog_inputs.fill(0);
+            last_ir_key = -1
             // connection complete
             connected = true;
             connect_attempt = true;
@@ -1356,6 +1389,7 @@ class Scratch3RpiOneGPIO {
             digital_inputs.fill(0);
             analog_inputs.fill(0);
             pin_modes.fill(-1);
+            last_ir_key = -1
             if (alerted === false) {
                 alerted = true;
                 alert(FormWSClosed[the_locale]);
@@ -1384,6 +1418,9 @@ class Scratch3RpiOneGPIO {
             } else if (report_type === 'sonar_data') {
                 value = msg['value'];
                 digital_inputs[sonar_report_pin] = value;
+            } else if (report_type === 'ir_key') {
+                value = msg['value'];
+                last_ir_key = value;
             }
         };
     }
