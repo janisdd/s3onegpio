@@ -315,6 +315,11 @@ const FromStringGetKeysFromJsonAsStringList = {
     'de': 'Gib alle Schlüssel zurück von [JSON]',
 };
 
+const FromSetOurServoDegrees = {
+    'en': 'Set servo to [DEGREE] ° (0-180)',
+    'de': 'Setze servo auf [DEGREE] ° (0-180)',
+};
+
 const FromStringComment = {
     'en': 'Comment [TEXT]',
     'de': 'Kommentar [TEXT]',
@@ -383,13 +388,13 @@ class Scratch3RpiOneGPIO {
                 //             variableType: Variable.LIST_TYPE
                 //         }
                 //     },
-                    // fields: {
-                    //     VARIABLE: {
-                    //
-                    //         name: 'VARIABLE',
-                    //         variableType: Variable.SCALAR_TYPE
-                    //     }
-                    // }
+                // fields: {
+                //     VARIABLE: {
+                //
+                //         name: 'VARIABLE',
+                //         variableType: Variable.SCALAR_TYPE
+                //     }
+                // }
                 // },
                 {
                     opcode: 'ip_address',
@@ -459,13 +464,14 @@ class Scratch3RpiOneGPIO {
                         }
                     }
                 },
-                {
-                    opcode: 'read_ir_key', //TODO test
-                    blockType: BlockType.REPORTER,
-                    text: FormGetIRKey[the_locale],
-                    arguments: {
-                    }
-                },
+                //not working
+                // {
+                //     opcode: 'read_ir_key',
+                //     blockType: BlockType.REPORTER,
+                //     text: FormGetIRKey[the_locale],
+                //     arguments: {
+                //     }
+                // },
                 // '---',
                 //not needed
                 // {
@@ -640,6 +646,17 @@ class Scratch3RpiOneGPIO {
                     },
                 },
                 {
+                    opcode: 'set_PCA9685_servo_degree',
+                    blockType: BlockType.COMMAND,
+                    text: FromSetOurServoDegrees[the_locale],
+                    arguments: {
+                        DEGREE: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: 0,
+                        },
+                    },
+                },
+                {
                     opcode: 'empty_comment_block',
                     blockType: BlockType.COMMAND,
                     text: FromStringComment[the_locale],
@@ -650,6 +667,7 @@ class Scratch3RpiOneGPIO {
                         },
                     },
                 },
+
                 //not working
                 // '---',
                 // {
@@ -864,6 +882,7 @@ class Scratch3RpiOneGPIO {
         }
     }
 
+    //not working...
     read_ir_key(args) {
         if (!connected) {
             if (!connection_pending) {
@@ -1300,6 +1319,30 @@ class Scratch3RpiOneGPIO {
             return ""
         }
     }
+
+
+    set_PCA9685_servo_degree(args) {
+        if (!connected) {
+            if (!connection_pending) {
+                this.connect();
+                connection_pending = true;
+            }
+        }
+        if (!connected) {
+            let callbackEntry = [this.set_PCA9685_servo_degree.bind(this), args];
+            wait_open.push(callbackEntry);
+        } else {
+            let degrees = args['DEGREE'];
+
+            let _degrees = Math.max(0, Math.min(180, degrees));
+            // console.log(degrees)
+
+            msg = {"command": "set_PCA9685_servo_degree", "degree": _degrees};
+            msg = JSON.stringify(msg);
+            window.socketr.send(msg);
+        }
+    }
+
     empty_comment_block(args, util, blockDef) {
 
     }
