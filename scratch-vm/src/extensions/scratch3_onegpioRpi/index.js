@@ -971,10 +971,14 @@ class Scratch3RpiOneGPIO {
             let pin = args['PIN'];
             pin = parseInt(pin, 10);
 
+            // console.log(pin_modes)
+            // console.log(pin_modes[pin])
+
             if (pin_modes[pin] !== DIGITAL_INPUT) {
                 pin_modes[pin] = DIGITAL_INPUT;
                 msg = {"command": "set_mode_digital_input", "pin": pin};
                 msg = JSON.stringify(msg);
+                // console.log(`sending ${msg}`)
                 window.socketr.send(msg);
             }
             return digital_inputs[pin];
@@ -1002,9 +1006,10 @@ class Scratch3RpiOneGPIO {
                 pull_state = 'pull_none';
             }
 
-            pin_modes[pin] = DIGITAL_INPUT;
+            //backend sets state as input but we cannot set it here
+            //because we only setup the listener (make a request) if `pin_modes[pin] !== DIGITAL_INPUT` see above
+            // pin_modes[pin] = DIGITAL_INPUT;
 
-            //TODO we made it so that the mode is set to digital input
             msg = {"command": "set_mode_digital_input_pull_state", "pin": pin, "pull_state": pull_state};
             msg = JSON.stringify(msg);
             window.socketr.send(msg);
