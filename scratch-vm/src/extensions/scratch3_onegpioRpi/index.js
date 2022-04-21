@@ -86,6 +86,11 @@ let valid_resistor_pull_states = ['pull_high', 'pull_low', 'pull_none']
 
 /** @type HTMLCanvasElement */
 var my_video_image_canvas = null
+var has_video_permission = false
+/** @type HTMLVideoElement */
+var videoEl = null
+
+var imageCapture = null
 
 // common
 const FormDigitalWrite = {
@@ -420,7 +425,7 @@ class Scratch3RpiOneGPIO {
                     arguments: {
                         PIN: {
                             type: ArgumentType.NUMBER,
-                            defaultValue: '4',
+                            defaultValue: '16',
                             menu: "digital_pins"
                         },
                         ON_OFF: {
@@ -432,22 +437,22 @@ class Scratch3RpiOneGPIO {
                 },
 
                 //not needed
-                // {
-                //     opcode: 'pwm_frequency',
-                //     blockType: BlockType.COMMAND,
-                //     text: FormPwmFrequency[the_locale],
-                //     arguments: {
-                //         PIN: {
-                //             type: ArgumentType.NUMBER,
-                //             defaultValue: '4',
-                //             menu: 'pwm_pins'
-                //         },
-                //         FREQUENCY: {
-                //             type: ArgumentType.NUMBER,
-                //             defaultValue: 50000, //50KHz
-                //         }
-                //     }
-                // },
+                {
+                    opcode: 'pwm_frequency',
+                    blockType: BlockType.COMMAND,
+                    text: FormPwmFrequency[the_locale],
+                    arguments: {
+                        PIN: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: '16',
+                            menu: 'pwm_pins'
+                        },
+                        FREQUENCY: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: 500, //500Hz
+                        }
+                    }
+                },
                 {
                     opcode: 'pwm_write',
                     blockType: BlockType.COMMAND,
@@ -455,7 +460,7 @@ class Scratch3RpiOneGPIO {
                     arguments: {
                         PIN: {
                             type: ArgumentType.NUMBER,
-                            defaultValue: '4',
+                            defaultValue: '16',
                             menu: 'pwm_pins'
                         },
                         VALUE: {
@@ -481,7 +486,7 @@ class Scratch3RpiOneGPIO {
                 //     arguments: {
                 //         PIN: {
                 //             type: ArgumentType.NUMBER,
-                //             defaultValue: '4',
+                //             defaultValue: '16',
                 //             menu: 'digital_pins'
                 //         },
                 //         FREQ: {
@@ -504,7 +509,7 @@ class Scratch3RpiOneGPIO {
                 //     arguments: {
                 //         PIN: {
                 //             type: ArgumentType.NUMBER,
-                //             defaultValue: '4',
+                //             defaultValue: '16',
                 //             menu: 'digital_pins'
                 //         },
                 //         ANGLE: {
@@ -523,7 +528,7 @@ class Scratch3RpiOneGPIO {
                     arguments: {
                         PIN: {
                             type: ArgumentType.NUMBER,
-                            defaultValue: '4',
+                            defaultValue: '16',
                             menu: 'digital_pins'
                         },
                     }
@@ -536,7 +541,7 @@ class Scratch3RpiOneGPIO {
                     arguments: {
                         PIN: {
                             type: ArgumentType.NUMBER,
-                            defaultValue: '4',
+                            defaultValue: '16',
                             menu: 'digital_pins'
                         },
                         PULL_STATE: {
@@ -708,7 +713,7 @@ class Scratch3RpiOneGPIO {
                 //     arguments: {
                 //         TRIGGER_PIN: {
                 //             type: ArgumentType.NUMBER,
-                //             defaultValue: '4',
+                //             defaultValue: '16',
                 //             menu: 'digital_pins'
                 //         },
                 //         ECHO_PIN: {
@@ -1171,48 +1176,119 @@ class Scratch3RpiOneGPIO {
 
     try_scan_qr_code_as_json_string(args, util, blockDef) {
 
-        if (!this.runtime.ioDevices.video.provider.videoReady) {
-            console.log(`video not ready`)
-            return ""
-        }
-
         if (!my_video_image_canvas) {
             my_video_image_canvas = document.createElement('canvas');
+            // my_video_image_canvas.width = 640;
+            // my_video_image_canvas.height = 480;
+            // document.body.appendChild(my_video_image_canvas)
         }
-        const video = this.runtime.ioDevices.video.provider.video
-        let context = my_video_image_canvas.getContext('2d');
-        let [w, h] = [video.videoWidth, video.videoHeight]
-        my_video_image_canvas.width = w;
-        my_video_image_canvas.height = h;
-        context.drawImage(video, 0, 0, w, h);
-        let dataUrl = my_video_image_canvas.toDataURL() //maybe blobs?
-        // console.log(dataUrl)
 
-        return new Promise((resolve, reject) => {
+        //---------------- do not use webcam ... (only works on chrome... first image takes a bit)
 
-            QrScanner.scanImage(dataUrl, {canvas: undefined}) //we need to supply some setting to get a proper result type
-                .then(result => {
-                    console.log(result)
-
-                    let jsonString = result.data
-                    resolve(jsonString)
-
-                    // try {
-                    //     let jsonObj = JSON.parse(jsonString)
-                    //     console.log(jsonObj)
-                    //     return jsonObj
-                    // } catch (e) {
-                    //     console.log(`error parsing json: ${e}`)
-                    //     return null
-                    // }
-                    // return result
+        let captureAction = () => {
+            return new Promise((resolve, reject) => {
+                imageCapture.takePhoto({
+                    imageWidth: 640,
+                    imageHeight: 480,
                 })
-                .catch(err => {
-                    console.log(err)
-                    // return null
-                    resolve("")
+                    .then(blob => createImageBitmap(blob))
+                    .then(imageBitmap => {
+                        // const canvas = document.querySelector('#grabFrameCanvas');
+                        console.log(imageBitmap)
+                        let context = my_video_image_canvas.getContext('2d');
+                        let [w, h] = [640, 480]
+                        my_video_image_canvas.width = w;
+                        my_video_image_canvas.height = h;
+                        context.drawImage(imageBitmap, 0, 0, w, h);
+                        let dataUrl = my_video_image_canvas.toDataURL() //maybe blobs?
+
+                        QrScanner.scanImage(dataUrl, {canvas: undefined}) //we need to supply some setting to get a proper result type
+                            .then(result => {
+                                console.log(result)
+                                let jsonString = result.data
+                                resolve(jsonString)
+                            })
+                            .catch(err => {
+                                console.log(err)
+                                // return null
+                                resolve("")
+                            })
+                    })
+                    .catch(error => {
+                        console.error(error)
+                        resolve("")
+                    })
+            })
+        }
+
+        if (!has_video_permission) {
+            //see https://developer.mozilla.org/en-US/docs/Web/API/ImageCapture
+            navigator.mediaDevices.getUserMedia({video: true})
+                .then(mediaStream => {
+                    if (!videoEl) {
+                        videoEl = document.createElement('video');
+                    }
+
+                    videoEl.srcObject = mediaStream;
+                    const track = mediaStream.getVideoTracks()[0];
+                    imageCapture = new ImageCapture(track);
+
+                    return captureAction()
                 })
-        })
+                .catch(error => console.log(error));
+            has_video_permission = true
+        }
+        else {
+            return captureAction()
+        }
+
+        //---------------- uses webcam... (bad for vnc)
+
+        // if (!this.runtime.ioDevices.video.provider.videoReady) {
+        //     console.log(`video not ready`)
+        //     return ""
+        // }
+        //
+        // if (!my_video_image_canvas) {
+        //     my_video_image_canvas = document.createElement('canvas');
+        // }
+        // const video = this.runtime.ioDevices.video.provider.video
+
+        // let context = my_video_image_canvas.getContext('2d');
+        // let [w, h] = [video.videoWidth, video.videoHeight]
+        // my_video_image_canvas.width = w;
+        // my_video_image_canvas.height = h;
+        // context.drawImage(video, 0, 0, w, h);
+        // let dataUrl = my_video_image_canvas.toDataURL() //maybe blobs?
+        // // console.log(dataUrl)
+        //
+        // return new Promise((resolve, reject) => {
+        //
+        //     QrScanner.scanImage(dataUrl, {canvas: undefined}) //we need to supply some setting to get a proper result type
+        //         .then(result => {
+        //             console.log(result)
+        //
+        //             let jsonString = result.data
+        //             resolve(jsonString)
+        //
+        //             // try {
+        //             //     let jsonObj = JSON.parse(jsonString)
+        //             //     console.log(jsonObj)
+        //             //     return jsonObj
+        //             // } catch (e) {
+        //             //     console.log(`error parsing json: ${e}`)
+        //             //     return null
+        //             // }
+        //             // return result
+        //         })
+        //         .catch(err => {
+        //             console.log(err)
+        //             // return null
+        //             resolve("")
+        //         })
+        // })
+
+        //---------------------------
 
         // let maxRetrys = 10
         // console.log(this.runtime.ioDevices.video)
