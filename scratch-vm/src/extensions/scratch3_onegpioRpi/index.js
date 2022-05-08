@@ -33,6 +33,7 @@ const Scratch3DataBlocks = require("../../blocks/scratch3_data");
 const util = require("util");
 const Color = require("../../util/color");
 const QrScanner = require('qr-scanner').default;
+const api = require('../../../swagger/src/index')
 
 // The following are constants used within the extension
 
@@ -91,6 +92,8 @@ var has_video_permission = false
 var videoEl = null
 
 var imageCapture = null
+
+var remoteServerIp = null
 
 // common
 const FormDigitalWrite = {
@@ -418,41 +421,58 @@ class Scratch3RpiOneGPIO {
 
                 },
                 {
-                    opcode: 'digital_write',
+                    opcode: 'move_direction_speed',
                     blockType: BlockType.COMMAND,
-                    text: FormDigitalWrite[the_locale],
+                    text: 'Fahre [DIRECTION] mit Geschwindigkeit [SPEED]',
 
                     arguments: {
-                        PIN: {
-                            type: ArgumentType.NUMBER,
-                            defaultValue: '16',
-                            menu: "digital_pins"
+                        DIRECTION: {
+                            type: ArgumentType.STRING,
+                            defaultValue: 'forward',
+                            menu: 'move_direction',
                         },
-                        ON_OFF: {
+                        SPEED: {
                             type: ArgumentType.NUMBER,
-                            defaultValue: '0',
-                            menu: "on_off"
+                            defaultValue: '50'
                         }
                     }
                 },
+                // {
+                //     opcode: 'digital_write',
+                //     blockType: BlockType.COMMAND,
+                //     text: FormDigitalWrite[the_locale],
+                //
+                //     arguments: {
+                //         PIN: {
+                //             type: ArgumentType.NUMBER,
+                //             defaultValue: '16',
+                //             menu: "digital_pins"
+                //         },
+                //         ON_OFF: {
+                //             type: ArgumentType.NUMBER,
+                //             defaultValue: '0',
+                //             menu: "on_off"
+                //         }
+                //     }
+                // },
 
-                //not needed
-                {
-                    opcode: 'pwm_frequency',
-                    blockType: BlockType.COMMAND,
-                    text: FormPwmFrequency[the_locale],
-                    arguments: {
-                        PIN: {
-                            type: ArgumentType.NUMBER,
-                            defaultValue: '16',
-                            menu: 'pwm_pins'
-                        },
-                        FREQUENCY: {
-                            type: ArgumentType.NUMBER,
-                            defaultValue: 500, //500Hz
-                        }
-                    }
-                },
+                // //not needed
+                // {
+                //     opcode: 'pwm_frequency',
+                //     blockType: BlockType.COMMAND,
+                //     text: FormPwmFrequency[the_locale],
+                //     arguments: {
+                //         PIN: {
+                //             type: ArgumentType.NUMBER,
+                //             defaultValue: '16',
+                //             menu: 'pwm_pins'
+                //         },
+                //         FREQUENCY: {
+                //             type: ArgumentType.NUMBER,
+                //             defaultValue: 500, //500Hz
+                //         }
+                //     }
+                // },
                 {
                     opcode: 'pwm_write',
                     blockType: BlockType.COMMAND,
@@ -725,6 +745,10 @@ class Scratch3RpiOneGPIO {
                 // },
             ],
             menus: {
+                move_direction: {
+                    acceptReporters: false,
+                    items: ['forward', 'backward', 'left', 'right']
+                },
                 digital_pins: {
                     acceptReporters: true,
                     items: ['2', '3', '4', '5', '6', '7', '8', '9',
@@ -774,6 +798,23 @@ class Scratch3RpiOneGPIO {
                 }
             }
 
+        }
+
+    }
+
+    move_direction_speed(args) {
+
+        let dir = args.DIRECTION
+        let speed = args.SPEED
+
+        let instance = new api.MoveApi()
+
+        try {
+            instance.move(dir, speed, function (err, data) {
+                console.log(err, data);
+            })
+        } catch(err) {
+            console.error(err);
         }
 
     }
