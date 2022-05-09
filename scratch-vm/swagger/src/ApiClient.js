@@ -416,6 +416,7 @@ export class ApiClient {
             }
         } else if (!request.header['Content-Type']) {
             request.type('application/json');
+            // request.set('Content-Type', 'application/json');
         }
 
         if (contentType === 'application/x-www-form-urlencoded') {

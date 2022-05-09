@@ -408,12 +408,12 @@ class Scratch3RpiOneGPIO {
                     opcode: 'ip_address',
                     blockType: BlockType.COMMAND,
                     //text: 'Write Digital Pin [PIN] [ON_OFF]',
-                    text: FormIPBlockR[the_locale],
+                    text: 'IP-Adresse des RPi [IP_ADDR]',
 
                     arguments: {
                         IP_ADDR: {
-                            type: ArgumentType.NUMBER,
-                            defaultValue: '',
+                            type: ArgumentType.STRING,
+                            defaultValue: '141.48.9.174',
                             //menu: "digital_pins"
                         },
 
@@ -423,7 +423,7 @@ class Scratch3RpiOneGPIO {
                 {
                     opcode: 'move_direction_speed',
                     blockType: BlockType.COMMAND,
-                    text: 'Fahre [DIRECTION] mit Geschwindigkeit [SPEED]',
+                    text: 'Fahre [DIRECTION] mit Geschwindigkeit [SPEED]%',
 
                     arguments: {
                         DIRECTION: {
@@ -435,6 +435,14 @@ class Scratch3RpiOneGPIO {
                             type: ArgumentType.NUMBER,
                             defaultValue: '50'
                         }
+                    }
+                },
+                {
+                    opcode: 'move_stop',
+                    blockType: BlockType.COMMAND,
+                    text: 'Beende Fahrt',
+
+                    arguments: {
                     }
                 },
                 // {
@@ -789,17 +797,27 @@ class Scratch3RpiOneGPIO {
     // command blocks
 
     ip_address(args) {
-        if (args['IP_ADDR']) {
-            ws_ip_address = args['IP_ADDR'];
-            if (!connected) {
-                if (!connection_pending) {
-                    this.connect();
-                    connection_pending = true;
-                }
-            }
 
+
+        if (args.IP_ADDR) {
+            //check if remoteServerIp is valid
+            if (args.IP_ADDR.match(/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/)) {
+                remoteServerIp = args.IP_ADDR;
+                api.ApiClient.instance.basePath = "http://" + remoteServerIp + ":8080/api/v1"
+                console.log(remoteServerIp)
+            }
         }
 
+        // if (args['IP_ADDR']) {
+        //     ws_ip_address = args['IP_ADDR'];
+        //     if (!connected) {
+        //         if (!connection_pending) {
+        //             this.connect();
+        //             connection_pending = true;
+        //         }
+        //     }
+        //
+        // }
     }
 
     move_direction_speed(args) {
@@ -807,7 +825,7 @@ class Scratch3RpiOneGPIO {
         let dir = args.DIRECTION
         let speed = args.SPEED
 
-        let instance = new api.MoveApi()
+        let instance = new api.MoveApi();
 
         try {
             instance.move(dir, speed, function (err, data) {
@@ -816,7 +834,18 @@ class Scratch3RpiOneGPIO {
         } catch(err) {
             console.error(err);
         }
+    }
 
+    move_stop(args) {
+        let instance = new api.MoveApi()
+
+        try {
+            instance.moveStop(function (err, data) {
+                console.log(err, data);
+            })
+        } catch(err) {
+            console.error(err);
+        }
     }
 
     digital_write(args) {
